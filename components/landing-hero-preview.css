@@ -1,0 +1,275 @@
+.landingHeroPreview__preview {
+  width: 100%;
+  max-width: 620px;
+  margin-inline: auto;
+}
+
+.landingHeroPreview__certificate {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 1.44;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at center, rgb(255 254 249 / 88%) 0%, rgb(244 238 223 / 76%) 72%, rgb(229 216 191 / 72%) 100%),
+    repeating-linear-gradient(111deg, #f8f5ec 0 5px, #e8e2d4 5px 6px, #f8f5ec 6px 12px);
+  box-shadow: 0 26px 48px -26px rgb(52 40 27 / 33%), 0 10px 18px -12px rgb(52 40 27 / 24%);
+  color: #42403d;
+  font-family: Baskerville, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  text-align: center;
+}
+
+.landingHeroPreview__outerFrame,
+.landingHeroPreview__innerFrame {
+  position: absolute;
+  pointer-events: none;
+}
+
+.landingHeroPreview__outerFrame {
+  inset: 2.2%;
+  border: max(3px, .7cqw) double #816b52;
+  box-shadow: inset 0 0 0 2px rgb(225 210 184 / 75%);
+}
+
+.landingHeroPreview__innerFrame {
+  inset: 4.1%;
+  border: 1px solid #a89375;
+}
+
+.landingHeroPreview__corner {
+  position: absolute;
+  z-index: 1;
+  color: #8d7357;
+  font-size: clamp(10px, 2.8cqw, 18px);
+  line-height: 1;
+}
+
+.landingHeroPreview__topLeft { top: 4.8%; left: 5.2%; }
+.landingHeroPreview__topRight { top: 4.8%; right: 5.2%; transform: scaleX(-1); }
+.landingHeroPreview__bottomLeft { bottom: 4.8%; left: 5.2%; transform: scaleY(-1); }
+.landingHeroPreview__bottomRight { bottom: 4.8%; right: 5.2%; transform: scale(-1); }
+
+.landingHeroPreview__certificateBody {
+  position: absolute;
+  inset: 7% 8.5% 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.landingHeroPreview__headingBlock,
+.landingHeroPreview__footerBlock {
+  width: 100%;
+}
+
+.landingHeroPreview__topFlourish,
+.landingHeroPreview__bottomFlourish {
+  display: block;
+  width: 25%;
+  height: auto;
+  margin-inline: auto;
+  stroke: #8c7054;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landingHeroPreview__bottomFlourish {
+  margin-top: 1.2%;
+  transform: rotate(180deg);
+}
+
+.landingHeroPreview__issuer {
+  margin-top: 1.4%;
+  font-family: "Pirata One", Georgia, serif;
+  font-size: clamp(9px, 2.7cqw, 16px);
+  line-height: 1;
+}
+
+.landingHeroPreview__title {
+  margin-top: .2%;
+  font-family: "Pirata One", Georgia, serif;
+  font-size: clamp(28px, 9.2cqw, 58px);
+  line-height: .98;
+}
+
+.landingHeroPreview__subtitle {
+  font-family: "Pirata One", Georgia, serif;
+  font-size: clamp(10px, 3.1cqw, 19px);
+  line-height: 1;
+}
+
+.landingHeroPreview__presentedTo {
+  margin-top: 3.2%;
+  font-family: "Timeless Sans Grotesk", Arial, sans-serif;
+  font-size: clamp(7px, 1.55cqw, 10px);
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.landingHeroPreview__nameArea {
+  display: flex;
+  width: 90%;
+  height: 18%;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.landingHeroPreview__recipientName {
+  width: 100%;
+  font-family: "Pinyon Script", "Apple Chancery", cursive;
+  font-size: clamp(29px, 9cqw, 56px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.landingHeroPreview__occasion {
+  font-family: "Pirata One", Georgia, serif;
+  font-size: clamp(8px, 2.2cqw, 14px);
+  line-height: 1.1;
+}
+
+.landingHeroPreview__signatures {
+  display: flex;
+  width: 74%;
+  margin: 3.2% auto 0;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2%;
+}
+
+.landingHeroPreview__signature {
+  display: flex;
+  width: 30%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.landingHeroPreview__signatureScript {
+  font-family: "Pinyon Script", "Apple Chancery", cursive;
+  font-size: clamp(11px, 3.7cqw, 24px);
+  line-height: .9;
+  white-space: nowrap;
+}
+
+.landingHeroPreview__signatureLine {
+  width: 100%;
+  margin-top: 1%;
+  border-top: 1px solid #aa9980;
+}
+
+.landingHeroPreview__signatureLabel {
+  margin-top: 3%;
+  font-family: "Timeless Sans Grotesk", Arial, sans-serif;
+  font-size: clamp(5px, 1.2cqw, 8px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.landingHeroPreview__seal {
+  display: flex;
+  width: 9.5cqw;
+  height: 9.5cqw;
+  align-items: center;
+  justify-content: center;
+  border: max(2px, .45cqw) double #bb9a48;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fff4ba, #e4bc58 70%, #c49a3c);
+  box-shadow: inset 0 1px 2px rgb(255 255 255 / 70%), inset 0 -1px 2px rgb(101 68 18 / 25%), 0 1px 5px rgb(65 47 16 / 21%);
+}
+
+.landingHeroPreview__sealMark {
+  width: 53%;
+  height: 55%;
+  background: #765b28;
+  -webkit-mask: url("/sertiva.svg") center / contain no-repeat;
+  mask: url("/sertiva.svg") center / contain no-repeat;
+}
+
+.landingHeroPreview__nameControl {
+  display: flex;
+  width: min(100%, 340px);
+  margin: 23px auto 0;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #d2d0ca;
+  padding: 0 3px 9px;
+  text-align: left;
+}
+
+.landingHeroPreview__nameControl:focus-within {
+  border-color: #615744;
+}
+
+.landingHeroPreview__nameControl label {
+  flex: none;
+  color: #716f6a;
+  font-size: 13px;
+}
+
+.landingHeroPreview__nameControl input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #1b1b1b;
+  font-size: 15px;
+  outline: none;
+}
+
+.landingHeroPreview__nameControl input::placeholder {
+  color: #9a9993;
+}
+
+.landingHeroPreview__downloadOptions {
+  display: grid;
+  width: min(100%, 340px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px auto 0;
+}
+
+.landingHeroPreview__downloadOption {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #deddd8;
+  border-radius: 10px;
+  color: #44433f;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.landingHeroPreview__downloadOption {
+  background: #fff;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+
+.landingHeroPreview__downloadOption:hover:not(:disabled) {
+  border-color: #b9b7b0;
+  background: #f7f6f2;
+}
+
+.landingHeroPreview__downloadOption:focus-visible {
+  outline: 2px solid #615744;
+  outline-offset: 2px;
+}
+
+.landingHeroPreview__downloadOption:disabled {
+  cursor: progress;
+  opacity: .7;
+}
+
+.landingHeroPreview__downloadError {
+  margin-top: 8px;
+  color: #b42318;
+  font-size: 13px;
+}
