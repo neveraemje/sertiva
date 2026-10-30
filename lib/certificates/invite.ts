@@ -4,8 +4,10 @@ export function defaultInviteTitle(certificateName: string) {
   return `Your certificate: "${certificateName}"`
 }
 
-// Emails the public link to every allowed address and returns a status line for the UI.
-export async function sendPublicationInvite(certificateId: string, invite: { title: string; message: string }) {
+export type InviteResult = { sent: number; failed: string[] }
+
+// Emails the public link to every allowed address and returns how many were sent and which failed.
+export async function sendPublicationInvite(certificateId: string, invite: { title: string; message: string }): Promise<InviteResult> {
   const response = await fetch(`/api/publications/${certificateId}/invite`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -13,6 +15,5 @@ export async function sendPublicationInvite(certificateId: string, invite: { tit
   })
   const result = await response.json().catch(() => ({})) as { sent?: number; failed?: string[]; error?: string }
   if (!response.ok) throw new Error(result.error ?? "Could not send emails.")
-  if (result.failed?.length) return `Sent ${result.sent} email(s). Could not send to ${result.failed.join(", ")}.`
-  return `Sent the link to ${result.sent} email address${result.sent === 1 ? "" : "es"}.`
+  return { sent: result.sent ?? 0, failed: result.failed ?? [] }
 }

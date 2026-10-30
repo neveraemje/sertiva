@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar, type DashboardSection } from "@/components/app-sidebar"
 import { CertificateEditor } from "@/components/certificate/certificate-editor"
 import { CertificateList } from "@/components/certificate/certificate-list"
+import { LocaleProvider, useMessages } from "@/components/i18n/locale-provider"
 import { NewCertificateSheet } from "@/components/certificate/new-certificate-sheet"
 import { PublicationActivityDialog } from "@/components/certificate/publication-activity-dialog"
 import type { PreparedDesignFile } from "@/components/certificate/prepare-design-file"
 import type { CertificateEditorState, CertificateRecord, CertificateView } from "@/components/certificate/types"
+import { SettingsPage } from "@/components/settings/settings-page"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import type { CurrentUser } from "@/lib/auth"
 import {
@@ -32,6 +34,7 @@ const defaultEditor: CertificateEditorState = {
 
 function updateDashboardUrl(certificateId: string | null, view: CertificateView | null, method: "pushState" | "replaceState" = "pushState") {
   const url = new URL(window.location.href)
+  url.searchParams.delete("section")
   if (certificateId) {
     url.searchParams.set("certificate", certificateId)
     if (view) url.searchParams.set("view", view)
@@ -43,11 +46,34 @@ function updateDashboardUrl(certificateId: string | null, view: CertificateView 
   window.history[method](null, "", url)
 }
 
-export function CertificateAdmin({ user, initialCertificateId, initialView }: {
+function updateSectionUrl(section: DashboardSection) {
+  const url = new URL(window.location.href)
+  url.searchParams.delete("certificate")
+  url.searchParams.delete("view")
+  if (section === "settings") url.searchParams.set("section", "settings")
+  else url.searchParams.delete("section")
+  window.history.pushState(null, "", url)
+}
+
+const messages = {
+  en: { opening: "Opening certificate…" },
+  id: { opening: "Membuka sertifikat…" },
+}
+
+function OpeningCertificate() {
+  const t = useMessages(messages)
+  return <div className="flex min-h-svh flex-1 items-center justify-center text-sm text-muted-foreground">{t.opening}</div>
+}
+
+export function CertificateAdmin({ user: initialUser, initialCertificateId, initialView, initialSection }: {
   user: CurrentUser
   initialCertificateId: string | null
   initialView: CertificateView | null
+  initialSection: DashboardSection
 }) {
+  const [userName, setUserName] = useState(initialUser.name)
+  const user = { ...initialUser, name: userName }
+  const [section, setSection] = useState<DashboardSection>(initialCertificateId ? "certificates" : initialSection)
   const [certificates, setCertificates] = useState<CertificateRecord[]>([])
   const [activeId, setActiveId] = useState<string | null>(initialCertificateId)
   const [view, setView] = useState<CertificateView | null>(initialView)
@@ -74,6 +100,7 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
       const nextId = params.get("certificate")
       activeIdRef.current = nextId
       setActiveId(nextId)
+      setSection(!nextId && params.get("section") === "settings" ? "settings" : "certificates")
       setView(nextView === "edit" || nextView === "preview" || nextView === "details" ? nextView : null)
     }
     window.addEventListener("popstate", restoreLocation)
@@ -85,6 +112,7 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
     const nextView = certificate?.publication ? "details" : "edit"
     activeIdRef.current = id
     setActiveId(id)
+    setSection("certificates")
     setView(nextView)
     updateDashboardUrl(id, nextView)
   }
@@ -93,7 +121,16 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
     activeIdRef.current = null
     setActiveId(null)
     setView(null)
+    setSection("certificates")
     updateDashboardUrl(null, null)
+  }
+
+  function showSettings() {
+    activeIdRef.current = null
+    setActiveId(null)
+    setView(null)
+    setSection("settings")
+    updateSectionUrl("settings")
   }
 
   function changeView(nextView: CertificateView) {
@@ -116,7 +153,8 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
         updateDashboardUrl(null, null, "replaceState")
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load certificates.")
+      // An empty message makes CertificateList show its own translated fallback.
+      setError(caught instanceof Error ? caught.message : "")
     } finally {
       setLoading(false)
     }
@@ -137,7 +175,7 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
       setLoading(false)
     }).catch((caught) => {
       if (cancelled) return
-      setError(caught instanceof Error ? caught.message : "Could not load certificates.")
+      setError(caught instanceof Error ? caught.message : "")
       setLoading(false)
     })
     const timers = pendingSaves.current
@@ -225,42 +263,46 @@ export function CertificateAdmin({ user, initialCertificateId, initialView }: {
   }
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "calc(var(--spacing) * 60)" } as React.CSSProperties}>
-      <AppSidebar onCertificates={showCertificateList} user={user} />
-      <SidebarInset className="min-h-screen bg-muted/25">
-        {activeCertificate ? (
-          <CertificateEditor
-            key={activeCertificate.id}
-            certificate={activeCertificate}
-            view={activeView}
-            onViewChange={changeView}
-            userId={user.id}
-            onBack={showCertificateList}
-            onChange={updateActiveEditor}
-            onSave={saveActiveEditor}
-            onDelete={deleteCertificate}
-            onViewActivity={() => setActivityId(activeCertificate.id)}
-            saveStatus={saveStatuses[activeCertificate.id] ?? "idle"}
-            onPublished={reloadCertificates}
-          />
-        ) : activeId && loading ? (
-          <div className="flex min-h-svh flex-1 items-center justify-center text-sm text-muted-foreground">Opening certificate…</div>
-        ) : (
-          <CertificateList
-            certificates={certificates}
-            loading={loading}
-            error={error}
-            onRetry={reloadCertificates}
-            onCreate={() => setNewOpen(true)}
-            onOpen={openCertificate}
-          />
-        )}
+    <LocaleProvider initialLocale={initialUser.locale}>
+      <SidebarProvider style={{ "--sidebar-width": "calc(var(--spacing) * 60)" } as React.CSSProperties}>
+        <AppSidebar section={section} onCertificates={showCertificateList} onSettings={showSettings} user={user} />
+        <SidebarInset className="min-h-screen bg-muted/25">
+          {section === "settings" ? (
+            <SettingsPage user={user} onNameChange={setUserName} />
+          ) : activeCertificate ? (
+            <CertificateEditor
+              key={activeCertificate.id}
+              certificate={activeCertificate}
+              view={activeView}
+              onViewChange={changeView}
+              userId={user.id}
+              onBack={showCertificateList}
+              onChange={updateActiveEditor}
+              onSave={saveActiveEditor}
+              onDelete={deleteCertificate}
+              onViewActivity={() => setActivityId(activeCertificate.id)}
+              saveStatus={saveStatuses[activeCertificate.id] ?? "idle"}
+              onPublished={reloadCertificates}
+            />
+          ) : activeId && loading ? (
+            <OpeningCertificate />
+          ) : (
+            <CertificateList
+              certificates={certificates}
+              loading={loading}
+              error={error}
+              onRetry={reloadCertificates}
+              onCreate={() => setNewOpen(true)}
+              onOpen={openCertificate}
+            />
+          )}
 
-        <NewCertificateSheet open={newOpen} onOpenChange={setNewOpen} onCreate={createCertificate} />
-        <PublicationActivityDialog key={activityId ?? "closed"} certificate={activityCertificate} onOpenChange={(open) => {
-          if (!open) setActivityId(null)
-        }} />
-      </SidebarInset>
-    </SidebarProvider>
+          <NewCertificateSheet open={newOpen} onOpenChange={setNewOpen} onCreate={createCertificate} />
+          <PublicationActivityDialog key={activityId ?? "closed"} certificate={activityCertificate} onOpenChange={(open) => {
+            if (!open) setActivityId(null)
+          }} />
+        </SidebarInset>
+      </SidebarProvider>
+    </LocaleProvider>
   )
 }

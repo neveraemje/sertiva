@@ -1,15 +1,49 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
 import { DownloadIcon, UsersIcon } from "lucide-react"
 
 import type { CertificateRecord } from "@/components/certificate/types"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useLocale, useMessages } from "@/components/i18n/locale-provider"
 import { activityPageSize, loadCertificateEntries, loadPublicationMetrics, type CertificateEntry } from "@/lib/certificates/activity"
 
-function dateLabel(value: string) {
-  return new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+const messages = {
+  en: {
+    loadFailed: "Could not load activity.",
+    loadMoreFailed: "Could not load more activity.",
+    title: "Published activity",
+    description: "Names entered through the public certificate link.",
+    namesSubmitted: "Names submitted",
+    downloads: "Downloads",
+    people: "People who filled in this certificate",
+    loading: "Loading activity…",
+    empty: "No names recorded yet.",
+    downloadCount: (n: number) => `${n} downloads`,
+    loadingMore: "Loading…",
+    loadMore: "Load more",
+    note: "Names and downloads are tracked from this update onward. Earlier repeat-link activity cannot be recovered.",
+  },
+  id: {
+    loadFailed: "Tidak dapat memuat aktivitas.",
+    loadMoreFailed: "Tidak dapat memuat aktivitas lainnya.",
+    title: "Aktivitas publikasi",
+    description: "Nama yang dimasukkan melalui tautan sertifikat publik.",
+    namesSubmitted: "Nama dikirim",
+    downloads: "Unduhan",
+    people: "Orang yang mengisi sertifikat ini",
+    loading: "Memuat aktivitas…",
+    empty: "Belum ada nama yang tercatat.",
+    downloadCount: (n: number) => `${n} unduhan`,
+    loadingMore: "Memuat…",
+    loadMore: "Muat lainnya",
+    note: "Nama dan unduhan dicatat mulai pembaruan ini. Aktivitas tautan berulang sebelumnya tidak dapat dipulihkan.",
+  },
+}
+
+function dateLabel(value: string, localeTag: string) {
+  return new Date(value).toLocaleString(localeTag, { dateStyle: "medium", timeStyle: "short" })
 }
 
 export function PublicationActivityDialog({
@@ -19,6 +53,10 @@ export function PublicationActivityDialog({
   certificate: CertificateRecord | null
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useMessages(messages)
+  // An effect event, so a language change doesn't rerun the loading effect.
+  const loadErrorMessage = useEffectEvent((caught: unknown) => caught instanceof Error ? caught.message : t.loadFailed)
+  const { localeTag } = useLocale()
   const [entries, setEntries] = useState<CertificateEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -36,7 +74,7 @@ export function PublicationActivityDialog({
       setMetrics(latestMetrics)
       setHasMore(rows.length === activityPageSize)
     }).catch((caught) => {
-      if (!cancelled) setError(caught instanceof Error ? caught.message : "Could not load activity.")
+      if (!cancelled) setError(loadErrorMessage(caught))
     }).finally(() => {
       if (!cancelled) setLoading(false)
     })
@@ -52,7 +90,7 @@ export function PublicationActivityDialog({
       setEntries((current) => [...current, ...rows])
       setHasMore(rows.length === activityPageSize)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load more activity.")
+      setError(caught instanceof Error ? caught.message : t.loadMoreFailed)
     } finally {
       setLoadingMore(false)
     }
@@ -64,49 +102,49 @@ export function PublicationActivityDialog({
     <Dialog open={Boolean(publication)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[min(85vh,800px)] gap-5 overflow-hidden p-6 sm:max-w-2xl">
         <DialogHeader className="pr-8">
-          <DialogTitle>Published activity</DialogTitle>
-          <DialogDescription>{certificate?.name} · Names entered through the public certificate link.</DialogDescription>
+          <DialogTitle>{t.title}</DialogTitle>
+          <DialogDescription>{certificate?.name} · {t.description}</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border bg-muted/30 p-4">
             <UsersIcon className="mb-3 size-4 text-muted-foreground" />
             <p className="text-2xl font-semibold tabular-nums">{metrics?.submissionCount ?? publication?.submissionCount ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Names submitted</p>
+            <p className="text-xs text-muted-foreground">{t.namesSubmitted}</p>
           </div>
           <div className="rounded-xl border bg-muted/30 p-4">
             <DownloadIcon className="mb-3 size-4 text-muted-foreground" />
             <p className="text-2xl font-semibold tabular-nums">{metrics?.downloadCount ?? publication?.downloadCount ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Downloads</p>
+            <p className="text-xs text-muted-foreground">{t.downloads}</p>
           </div>
         </div>
 
         <div className="min-h-0 overflow-y-auto rounded-xl border">
           <div className="sticky top-0 border-b bg-background px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            People who filled in this certificate
+            {t.people}
           </div>
-          {loading ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading activity…</p>
-            : entries.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">No names recorded yet.</p>
+          {loading ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t.loading}</p>
+            : entries.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t.empty}</p>
               : <ul className="divide-y">
                 {entries.map((entry) => (
                   <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{entry.recipient_name}</p>
                       {entry.recipient_email && <p className="truncate text-xs text-muted-foreground">{entry.recipient_email}</p>}
-                      <p className="mt-1 text-xs text-muted-foreground">{dateLabel(entry.created_at)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{dateLabel(entry.created_at, localeTag)}</p>
                     </div>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{entry.download_count} downloads</span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{t.downloadCount(entry.download_count)}</span>
                   </li>
                 ))}
               </ul>}
           {hasMore && <div className="border-t p-3 text-center">
             <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => void loadMore()}>
-              {loadingMore ? "Loading…" : "Load more"}
+              {loadingMore ? t.loadingMore : t.loadMore}
             </Button>
           </div>}
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <p className="text-xs text-muted-foreground">Names and downloads are tracked from this update onward. Earlier repeat-link activity cannot be recovered.</p>
+        <p className="text-xs text-muted-foreground">{t.note}</p>
       </DialogContent>
     </Dialog>
   )

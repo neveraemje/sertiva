@@ -12,6 +12,22 @@ export type FieldPosition = {
   y: number
 }
 
+// Name box size as a percentage of the certificate. No height means the box follows the text height.
+export type FieldSize = {
+  width: number
+  height?: number
+}
+
+export const defaultFieldSize: FieldSize = { width: 60 }
+
+// Space between the name and the box edges, in px on a 1000px-wide certificate (like fontSize).
+export type FieldMargin = {
+  x: number
+  y: number
+}
+
+export const defaultFieldMargin: FieldMargin = { x: 20, y: 5 }
+
 export type TextAlignment = "left" | "center" | "right"
 
 export type CertificateView = "edit" | "preview" | "details"
@@ -25,6 +41,8 @@ export type CertificateEditorState = {
   textOpacity: number
   textAlign: TextAlignment
   position: FieldPosition
+  size?: FieldSize
+  margin?: FieldMargin
   autoFit: boolean
 }
 

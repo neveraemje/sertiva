@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 
 import { DesignFilePreview } from "@/components/certificate/design-file-preview"
 import { prepareDesignFile, type PreparedDesignFile } from "@/components/certificate/prepare-design-file"
+import { useMessages } from "@/components/i18n/locale-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,7 +23,35 @@ type NewCertificateSheetProps = {
   onCreate: (name: string, design: PreparedDesignFile) => Promise<void>
 }
 
+const messages = {
+  en: {
+    fileError: "This file could not be previewed. Try another PDF, PNG, or JPG.",
+    saveFailed: "Could not save the certificate.",
+    title: "New certificate",
+    description: "Name the certificate and upload its finished design.",
+    nameLabel: "Certificate name",
+    namePlaceholder: "e.g. Leadership Award",
+    designLabel: "Design file",
+    cancel: "Cancel",
+    saving: "Saving…",
+    create: "Create certificate",
+  },
+  id: {
+    fileError: "Pratinjau file ini tidak dapat ditampilkan. Coba file PDF, PNG, atau JPG lain.",
+    saveFailed: "Tidak dapat menyimpan sertifikat.",
+    title: "Sertifikat baru",
+    description: "Beri nama sertifikat dan unggah desain finalnya.",
+    nameLabel: "Nama sertifikat",
+    namePlaceholder: "mis. Penghargaan Kepemimpinan",
+    designLabel: "File desain",
+    cancel: "Batal",
+    saving: "Menyimpan…",
+    create: "Buat sertifikat",
+  },
+}
+
 export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertificateSheetProps) {
+  const t = useMessages(messages)
   const [name, setName] = useState("")
   const [design, setDesign] = useState<PreparedDesignFile | null>(null)
   const [preparing, setPreparing] = useState(false)
@@ -41,7 +70,7 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
     try {
       setDesign(await prepareDesignFile(nextFile))
     } catch {
-      setFileError("This file could not be previewed. Try another PDF, PNG, or JPG.")
+      setFileError(t.fileError)
     } finally {
       setPreparing(false)
     }
@@ -69,7 +98,7 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
       await onCreate(name.trim(), design)
       clearForm()
     } catch (caught) {
-      setCreateError(caught instanceof Error ? caught.message : "Could not save the certificate.")
+      setCreateError(caught instanceof Error ? caught.message : t.saveFailed)
     } finally {
       setCreating(false)
     }
@@ -79,16 +108,16 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
     <Sheet open={open} onOpenChange={changeOpen}>
       <SheetContent className="sm:max-w-md">
         <SheetHeader className="border-b p-6">
-          <SheetTitle>New certificate</SheetTitle>
-          <SheetDescription>Name the certificate and upload its finished design.</SheetDescription>
+          <SheetTitle>{t.title}</SheetTitle>
+          <SheetDescription>{t.description}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-2">
           <div className="space-y-2">
-            <Label htmlFor="certificate-name">Certificate name</Label>
+            <Label htmlFor="certificate-name">{t.nameLabel}</Label>
             <Input
               id="certificate-name"
-              placeholder="e.g. Leadership Award"
+              placeholder={t.namePlaceholder}
               value={name}
               onChange={(event) => setName(event.target.value)}
               autoFocus
@@ -96,7 +125,7 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
           </div>
 
           <div className="space-y-2">
-            <Label>Design file</Label>
+            <Label>{t.designLabel}</Label>
             <button
               type="button"
               className="flex min-h-44 w-full flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4 text-center transition-colors hover:bg-muted/60"
@@ -124,9 +153,9 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
         </div>
 
         <SheetFooter className="flex-row justify-between border-t p-6">
-          <Button variant="outline" size="lg" onClick={() => changeOpen(false)}>Cancel</Button>
+          <Button variant="outline" size="lg" onClick={() => changeOpen(false)}>{t.cancel}</Button>
           <Button size="lg" disabled={!name.trim() || !design || preparing || creating} onClick={() => { void createCertificate() }}>
-            {creating ? "Saving…" : "Create certificate"}
+            {creating ? t.saving : t.create}
           </Button>
         </SheetFooter>
       </SheetContent>

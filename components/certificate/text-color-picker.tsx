@@ -4,6 +4,8 @@ import { useRef, type PointerEvent } from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { PipetteIcon } from "lucide-react"
 
+import { useMessages } from "@/components/i18n/locale-provider"
+
 type Hsv = {
   h: number
   s: number
@@ -20,7 +22,35 @@ type TextColorPickerProps = {
   onChange: (color: string, opacity: number) => void
 }
 
+const messages = {
+  en: {
+    openPicker: "Open text color picker",
+    textHex: "Text color hex",
+    textOpacity: "Text color opacity",
+    area: "Color saturation and brightness",
+    eyedropper: "Pick a color from the screen",
+    hue: "Hue",
+    opacity: "Opacity",
+    hex: "Hex",
+    hexColor: "Hex color",
+    colorOpacity: "Color opacity",
+  },
+  id: {
+    openPicker: "Buka pemilih warna teks",
+    textHex: "Kode hex warna teks",
+    textOpacity: "Opasitas warna teks",
+    area: "Saturasi dan kecerahan warna",
+    eyedropper: "Ambil warna dari layar",
+    hue: "Rona",
+    opacity: "Opasitas",
+    hex: "Hex",
+    hexColor: "Kode warna hex",
+    colorOpacity: "Opasitas warna",
+  },
+}
+
 export function TextColorPicker({ color, opacity, onChange }: TextColorPickerProps) {
+  const t = useMessages(messages)
   const areaRef = useRef<HTMLDivElement>(null)
   const nativeColorInputRef = useRef<HTMLInputElement>(null)
   const safeOpacity = opacity ?? 100
@@ -81,7 +111,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
         <PopoverPrimitive.Trigger
           className="ml-2 flex size-6 shrink-0 items-center justify-center rounded border shadow-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
           style={{ backgroundColor: color, opacity: safeOpacity / 100 }}
-          aria-label="Open text color picker"
+          aria-label={t.openPicker}
         />
         <input
           key={color}
@@ -89,7 +119,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
           onChange={(event) => commitHex(event.target.value)}
           onFocus={(event) => event.currentTarget.select()}
           className="h-full min-w-0 flex-1 bg-transparent px-3 font-mono text-sm uppercase outline-none"
-          aria-label="Text color hex"
+          aria-label={t.textHex}
         />
         <span className="flex h-full w-[78px] shrink-0 items-center gap-1 border-l px-3 tabular-nums">
           <input
@@ -100,7 +130,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
             onChange={(event) => onChange(color, clamp(Number(event.target.value)))}
             onFocus={(event) => event.currentTarget.select()}
             className="min-w-0 flex-1 appearance-none bg-transparent text-right outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            aria-label="Text color opacity"
+            aria-label={t.textOpacity}
           />
           <span className="text-muted-foreground">%</span>
         </span>
@@ -123,7 +153,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
               onPointerMove={(event) => {
                 if (event.currentTarget.hasPointerCapture(event.pointerId)) pickFromArea(event)
               }}
-              aria-label="Color saturation and brightness"
+              aria-label={t.area}
             >
               <span
                 className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-md ring-1 ring-black/30"
@@ -136,8 +166,8 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
                 <button
                   type="button"
                   className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-                  aria-label="Pick a color from the screen"
-                  title="Pick a color from the screen"
+                  aria-label={t.eyedropper}
+                  title={t.eyedropper}
                   onClick={pickColorFromScreen}
                 >
                   <PipetteIcon className="size-4" />
@@ -159,7 +189,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
                 value={Math.round(hsv.h)}
                 onChange={(event) => commit({ ...hsv, h: Number(event.target.value) })}
                 className="h-3 w-full cursor-pointer appearance-none rounded-full border border-black/10 bg-[linear-gradient(to_right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)] accent-white [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-transparent [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-transparent [&::-webkit-slider-thumb]:shadow-md"
-                aria-label="Hue"
+                aria-label={t.hue}
               />
               <input
                 type="range"
@@ -173,19 +203,19 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
                   backgroundImage: `linear-gradient(to right, transparent, ${color}), conic-gradient(#d4d4d4 25%, #fff 0 50%, #d4d4d4 0 75%, #fff 0)`,
                   backgroundSize: "100% 100%, 10px 10px",
                 }}
-                aria-label="Opacity"
+                aria-label={t.opacity}
               />
             </div>
 
             <div className="mt-4 grid grid-cols-[64px_1fr_82px] overflow-hidden rounded-lg border border-border/70 bg-muted/60 text-sm">
-              <div className="flex items-center border-r px-3 text-muted-foreground">Hex</div>
+              <div className="flex items-center border-r px-3 text-muted-foreground">{t.hex}</div>
               <div className="flex items-center gap-1 border-r px-3">
                 <input
                   key={color}
                   defaultValue={cleanHex(color)}
                   onChange={(event) => commitHex(event.target.value)}
                   className="h-10 min-w-0 flex-1 bg-transparent font-mono text-xs uppercase outline-none"
-                  aria-label="Hex color"
+                  aria-label={t.hexColor}
                 />
               </div>
               <div className="flex items-center gap-1 px-3 tabular-nums">
@@ -196,7 +226,7 @@ export function TextColorPicker({ color, opacity, onChange }: TextColorPickerPro
                   value={safeOpacity}
                   onChange={(event) => onChange(color, clamp(Number(event.target.value)))}
                   className="h-10 min-w-0 flex-1 appearance-none bg-transparent text-right outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  aria-label="Color opacity"
+                  aria-label={t.colorOpacity}
                 />
                 <span className="text-muted-foreground">%</span>
               </div>

@@ -1,6 +1,7 @@
 import { FileTextIcon } from "lucide-react"
 
 import type { TemplateAsset } from "@/components/certificate/types"
+import { useMessages } from "@/components/i18n/locale-provider"
 import { cn } from "@/lib/utils"
 
 type DesignThumbnailProps = {
@@ -8,18 +9,24 @@ type DesignThumbnailProps = {
   variant?: "compact" | "card"
 }
 
-export function getDesignFormat(template: TemplateAsset) {
+export const designFormatMessages = {
+  en: { image: "IMAGE" },
+  id: { image: "GAMBAR" },
+}
+
+export function getDesignFormat(template: TemplateAsset, imageLabel = designFormatMessages.en.image) {
   if (template.kind === "pdf") return "PDF"
 
   const extension = template.name.split(".").pop()?.toUpperCase()
   if (extension === "JPEG") return "JPG"
   if (extension === "PNG" || extension === "JPG") return extension
 
-  return "IMAGE"
+  return imageLabel
 }
 
 export function DesignThumbnail({ template, variant = "compact" }: DesignThumbnailProps) {
-  const format = getDesignFormat(template)
+  const t = useMessages(designFormatMessages)
+  const format = getDesignFormat(template, t.image)
   const isCard = variant === "card"
 
   return (

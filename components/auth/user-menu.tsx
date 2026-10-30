@@ -1,6 +1,5 @@
 "use client"
 
-import { SignOutButton } from "@/components/auth/sign-out-button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar"
 import type { CurrentUser } from "@/lib/auth"
@@ -32,9 +31,6 @@ export function UserMenu({ user }: { user: CurrentUser }) {
             ) : null}
           </span>
         </div>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SignOutButton />
       </SidebarMenuItem>
     </SidebarMenu>
   )

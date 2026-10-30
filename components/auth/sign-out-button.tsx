@@ -4,10 +4,17 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { LoaderCircleIcon, LogOutIcon } from "lucide-react"
 
-import { SidebarMenuButton } from "@/components/ui/sidebar"
+import { useMessages } from "@/components/i18n/locale-provider"
+import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 
+const messages = {
+  en: { signOut: "Sign out" },
+  id: { signOut: "Keluar" },
+}
+
 export function SignOutButton() {
+  const t = useMessages(messages)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -20,16 +27,9 @@ export function SignOutButton() {
   }
 
   return (
-    <SidebarMenuButton
-      type="button"
-      tooltip="Sign out"
-      aria-label="Sign out"
-      className="text-muted-foreground hover:text-foreground"
-      disabled={loading}
-      onClick={handleSignOut}
-    >
-      {loading ? <LoaderCircleIcon className="animate-spin" /> : <LogOutIcon />}
-      <span>Sign out</span>
-    </SidebarMenuButton>
+    <Button type="button" variant="outline" disabled={loading} onClick={handleSignOut}>
+      {loading ? <LoaderCircleIcon className="animate-spin" data-icon="inline-start" /> : <LogOutIcon data-icon="inline-start" />}
+      {t.signOut}
+    </Button>
   )
 }

@@ -13,6 +13,7 @@ import { PublishCertificateDialog } from "@/components/certificate/publish-certi
 import { PublishedDetail } from "@/components/certificate/published-detail"
 import type { CertificateEditorState, CertificateRecord, CertificateView, FieldPosition } from "@/components/certificate/types"
 import { Badge } from "@/components/ui/badge"
+import { useMessages } from "@/components/i18n/locale-provider"
 
 type CertificateEditorProps = {
   certificate: CertificateRecord
@@ -28,7 +29,27 @@ type CertificateEditorProps = {
   onPublished: () => Promise<void>
 }
 
+const messages = {
+  en: {
+    back: "Back to certificates",
+    published: "Published",
+    draft: "Draft",
+    properties: "Properties",
+    publishedDetail: "Published detail",
+    deleteCertificate: "Delete certificate",
+  },
+  id: {
+    back: "Kembali ke sertifikat",
+    published: "Diterbitkan",
+    draft: "Draf",
+    properties: "Properti",
+    publishedDetail: "Detail terbitan",
+    deleteCertificate: "Hapus sertifikat",
+  },
+}
+
 export function CertificateEditor({ certificate, view, onViewChange, userId, onBack, onChange, onSave, onDelete, onViewActivity, saveStatus, onPublished }: CertificateEditorProps) {
+  const t = useMessages(messages)
   const previewMode = view === "preview"
   const editing = view !== "details"
   const [publishOpen, setPublishOpen] = useState(false)
@@ -50,17 +71,17 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
   }
 
   return (
-    <div className="flex min-h-svh min-w-0 flex-1 flex-col xl:h-svh xl:min-h-0 xl:flex-row xl:overflow-hidden">
+    <div className="flex min-h-svh min-w-0 flex-1 flex-col xl:h-svh xl:max-h-svh xl:min-h-0 xl:flex-row xl:overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex min-h-14 items-center gap-3 border-b bg-background px-4 lg:px-6">
+        <div className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b bg-background px-4 lg:px-6">
           <SidebarTrigger className="md:hidden" />
-          <Button variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back to certificates"><ArrowLeftIcon /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={onBack} aria-label={t.back}><ArrowLeftIcon /></Button>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="truncate text-sm font-medium">{certificate.name}</p>
               {certificate.publication
-                ? <Badge className="bg-emerald-50 text-emerald-700">Published</Badge>
-                : <Badge variant="secondary">Draft</Badge>}
+                ? <Badge className="bg-emerald-50 text-emerald-700">{t.published}</Badge>
+                : <Badge variant="secondary">{t.draft}</Badge>}
             </div>
             <p className="truncate text-[11px] text-muted-foreground">{certificate.template.name}</p>
           </div>
@@ -78,19 +99,22 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
         </div>
 
         <div
-          className="min-h-0 flex-1 bg-[#f6f6f6] xl:overflow-auto"
+          className="min-h-0 flex-1 bg-[#f6f6f6] xl:flex xl:flex-col xl:overflow-hidden"
           style={{
             backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
             backgroundSize: "18px 18px",
           }}
         >
-          <div className="min-h-full p-4 lg:p-6">
+          <div className="min-h-full p-4 lg:p-6 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:pb-0">
             <CertificatePreview
-              className="min-h-[calc(100vh-7rem)]"
+              // Fills the screen below the 3.5rem top bar and the canvas padding (2rem, or 3rem from lg).
+              // From xl the preview scrolls inside itself, so its bottom bar stays in place.
+              className="min-h-[calc(100svh-5.5rem)] lg:min-h-[calc(100svh-6.5rem)] xl:min-h-0 xl:flex-1"
               template={certificate.template}
               editor={certificate.editor}
               previewMode={previewMode || !editing}
               onPositionChange={(position: FieldPosition) => onChange({ position })}
+              onBoxChange={(box) => onChange(box)}
               onNameChange={(recipientName) => onChange({ recipientName })}
             />
           </div>
@@ -100,7 +124,7 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
 
       {!previewMode && (
         <aside ref={sidebarRef} className="w-full shrink-0 scroll-mt-4 border-t bg-white xl:flex xl:h-svh xl:min-h-0 xl:w-[320px] xl:flex-col xl:overflow-hidden xl:border-t-0 xl:border-l">
-          <div className="flex h-12 items-center border-b px-4 text-sm font-medium">{editing ? "Properties" : "Published detail"}</div>
+          <div className="flex h-14 shrink-0 items-center border-b px-4 text-sm font-medium">{editing ? t.properties : t.publishedDetail}</div>
           <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
             {editing ? (
               <FieldSettings
@@ -109,11 +133,11 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
                 onChange={onChange}
               />
             ) : <PublishedDetail certificate={certificate} active onSettingsChanged={onPublished} onViewActivity={onViewActivity} />}
-          </div>
-          <div className="border-t p-4">
-            <Button type="button" variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)}>
-              <Trash2Icon /> Delete certificate
-            </Button>
+            <div className="border-t p-4">
+              <Button type="button" variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)}>
+                <Trash2Icon /> {t.deleteCertificate}
+              </Button>
+            </div>
           </div>
         </aside>
       )}

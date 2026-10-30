@@ -1,8 +1,9 @@
 "use client"
 
-import { FilesIcon } from "lucide-react"
+import { FileTextIcon, SettingsIcon } from "lucide-react"
 
 import { UserMenu } from "@/components/auth/user-menu"
+import { useMessages } from "@/components/i18n/locale-provider"
 import { SertivaLogo } from "@/components/sertiva-logo"
 import {
   Sidebar,
@@ -10,7 +11,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -18,12 +18,23 @@ import {
 } from "@/components/ui/sidebar"
 import type { CurrentUser } from "@/lib/auth"
 
+export type DashboardSection = "certificates" | "settings"
+
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  section: DashboardSection
   onCertificates: () => void
+  onSettings: () => void
   user: CurrentUser
 }
 
-export function AppSidebar({ onCertificates, user, ...props }: AppSidebarProps) {
+const messages = {
+  en: { tagline: "Certificate studio", certificates: "Certificates", settings: "Settings" },
+  id: { tagline: "Studio sertifikat", certificates: "Sertifikat", settings: "Pengaturan" },
+}
+
+export function AppSidebar({ section, onCertificates, onSettings, user, ...props }: AppSidebarProps) {
+  const t = useMessages(messages)
+
   return (
     <Sidebar collapsible="icon" className="[--sidebar:#fff]" {...props}>
       <SidebarHeader className="p-3">
@@ -35,7 +46,7 @@ export function AppSidebar({ onCertificates, user, ...props }: AppSidebarProps) 
               </span>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-lg font-semibold">Sertiva</span>
-                <span className="truncate text-xs text-muted-foreground">Certificate studio</span>
+                <span className="truncate text-xs text-muted-foreground">{t.tagline}</span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -43,14 +54,19 @@ export function AppSidebar({ onCertificates, user, ...props }: AppSidebarProps) 
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+        <SidebarGroup className="px-3 py-2 group-data-[collapsible=icon]:px-2">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               <SidebarMenuItem>
-                <SidebarMenuButton isActive tooltip="Certificates" onClick={onCertificates}>
-                  <FilesIcon />
-                  <span>Certificates</span>
+                <SidebarMenuButton isActive={section === "certificates"} tooltip={t.certificates} onClick={onCertificates}>
+                  <FileTextIcon />
+                  <span>{t.certificates}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={section === "settings"} tooltip={t.settings} onClick={onSettings}>
+                  <SettingsIcon />
+                  <span>{t.settings}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

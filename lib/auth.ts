@@ -1,5 +1,6 @@
 import "server-only"
 
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/locale"
 import { createClient } from "@/lib/supabase/server"
 
 export type CurrentUser = {
@@ -7,6 +8,7 @@ export type CurrentUser = {
   email?: string
   name: string
   avatarUrl?: string
+  locale: Locale
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -23,7 +25,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const metadata = data.claims.user_metadata && typeof data.claims.user_metadata === "object"
     ? data.claims.user_metadata as Record<string, unknown>
     : {}
-  const metadataName = [metadata.full_name, metadata.name, metadata.display_name]
+  // display_name is set in Settings and wins, because Google sign-in rewrites full_name and name on every login.
+  const metadataName = [metadata.display_name, metadata.full_name, metadata.name]
     .find((value): value is string => typeof value === "string" && value.trim().length > 0)
   const metadataAvatar = [metadata.avatar_url, metadata.picture]
     .find((value): value is string => typeof value === "string" && value.trim().length > 0)
@@ -33,5 +36,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     email,
     name: metadataName ?? email?.split("@")[0] ?? "Sertiva user",
     avatarUrl: metadataAvatar,
+    locale: isLocale(metadata.locale) ? metadata.locale : defaultLocale,
   }
 }

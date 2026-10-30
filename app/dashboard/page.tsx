@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 export const instant = false
 
 export default async function DashboardPage({ searchParams }: {
-  searchParams: Promise<{ certificate?: string | string[]; view?: string | string[] }>
+  searchParams: Promise<{ certificate?: string | string[]; view?: string | string[]; section?: string | string[] }>
 }) {
   const user = await getCurrentUser()
 
@@ -17,7 +17,8 @@ export default async function DashboardPage({ searchParams }: {
 
   const params = await searchParams
   const initialCertificateId = typeof params.certificate === "string" ? params.certificate : null
+  const initialSection = params.section === "settings" ? "settings" : "certificates"
   const initialView: CertificateView | null = params.view === "edit" || params.view === "preview" || params.view === "details" ? params.view : null
 
-  return <CertificateAdmin key={user.id} user={user} initialCertificateId={initialCertificateId} initialView={initialView} />
+  return <CertificateAdmin key={user.id} user={user} initialCertificateId={initialCertificateId} initialView={initialView} initialSection={initialSection} />
 }

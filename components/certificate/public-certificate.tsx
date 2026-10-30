@@ -51,10 +51,15 @@ async function renderCertificate(imageUrl: string, editor: CertificateEditorStat
     await document.fonts.load(`${editor.fontWeight || 400} ${editor.fontSize}px ${family}`)
 
     let fontSize = (editor.fontSize || 34) * (canvas.width / 1000)
-    const maxWidth = canvas.width * 0.56
+    // The text area is the name box minus its margin, which is in px on a 1000px-wide certificate.
+    const size = editor.size ?? { width: 60 }
+    const margin = editor.margin ?? { x: 20, y: 5 }
+    const scale = canvas.width / 1000
+    const maxWidth = Math.max(1, canvas.width * size.width / 100 - 2 * margin.x * scale)
+    const maxHeight = size.height ? Math.max(1, canvas.height * size.height / 100 - 2 * margin.y * scale) * 0.8 : Infinity
     context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
     if (editor.autoFit) {
-      while (context.measureText(name).width > maxWidth && fontSize > canvas.width * 0.018) {
+      while ((context.measureText(name).width > maxWidth || fontSize > maxHeight) && fontSize > canvas.width * 0.018) {
         fontSize -= Math.max(1, canvas.width / 1000)
         context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
       }
@@ -69,8 +74,8 @@ async function renderCertificate(imageUrl: string, editor: CertificateEditorStat
     context.textAlign = align
     context.textBaseline = "middle"
     context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
-    const textX = align === "left" ? centerX - canvas.width * 0.28
-      : align === "right" ? centerX + canvas.width * 0.28
+    const textX = align === "left" ? centerX - maxWidth / 2
+      : align === "right" ? centerX + maxWidth / 2
       : centerX
     context.fillText(name, textX, centerY, maxWidth)
 

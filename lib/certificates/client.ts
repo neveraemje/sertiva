@@ -33,13 +33,9 @@ type PublicationRow = {
   download_count: number
 }
 
+// Keeps the timestamp so the card can format it in the dashboard language.
 function formatUpdatedAt(value: string) {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? "Recently" : date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
+  return Number.isNaN(new Date(value).getTime()) ? "Recently" : value
 }
 
 async function signedUrl(path: string) {

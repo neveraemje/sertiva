@@ -4,6 +4,8 @@ import { useRef, useState, type KeyboardEvent } from "react"
 import { XIcon } from "lucide-react"
 import { cn } from "cn"
 
+import { useMessages } from "@/components/i18n/locale-provider"
+
 type EmailChipInputProps = {
   emails: string[]
   onChange: (emails: string[]) => void
@@ -20,24 +22,44 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+const messages = {
+  en: {
+    invalid: "Enter a valid email address.",
+    remove: (email: string) => `Remove ${email}`,
+    addRecipient: "Add recipient email",
+    placeholderFirst: "Type an email and press Enter",
+    placeholderMore: "Add another email",
+    hint: "Press Enter or comma after each email address.",
+  },
+  id: {
+    invalid: "Masukkan alamat email yang valid.",
+    remove: (email: string) => `Hapus ${email}`,
+    addRecipient: "Tambahkan email penerima",
+    placeholderFirst: "Ketik email lalu tekan Enter",
+    placeholderMore: "Tambahkan email lain",
+    hint: "Tekan Enter atau koma setelah setiap alamat email.",
+  },
+}
+
 export function EmailChipInput({ emails, onChange }: EmailChipInputProps) {
+  const t = useMessages(messages)
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState("")
-  const [error, setError] = useState("")
+  const [error, setError] = useState(false)
 
   function commitDraft() {
     const candidates = parseEmails(draft)
     if (candidates.length === 0) return
 
     if (candidates.some((email) => !isValidEmail(email))) {
-      setError("Enter a valid email address.")
+      setError(true)
       return
     }
 
     const nextEmails = Array.from(new Set([...emails, ...candidates]))
     onChange(nextEmails)
     setDraft("")
-    setError("")
+    setError(false)
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -54,7 +76,7 @@ export function EmailChipInput({ emails, onChange }: EmailChipInputProps) {
 
   function removeEmail(emailToRemove: string) {
     onChange(emails.filter((email) => email !== emailToRemove))
-    setError("")
+    setError(false)
     window.setTimeout(() => inputRef.current?.focus(), 0)
   }
 
@@ -75,7 +97,7 @@ export function EmailChipInput({ emails, onChange }: EmailChipInputProps) {
             <span className="truncate">{email}</span>
             <button
               type="button"
-              aria-label={`Remove ${email}`}
+              aria-label={t.remove(email)}
               className="-mr-1 flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
               onClick={(event) => {
                 event.stopPropagation()
@@ -91,13 +113,13 @@ export function EmailChipInput({ emails, onChange }: EmailChipInputProps) {
           ref={inputRef}
           type="email"
           value={draft}
-          aria-label="Add recipient email"
-          aria-invalid={Boolean(error)}
-          placeholder={emails.length === 0 ? "Type an email and press Enter" : "Add another email"}
+          aria-label={t.addRecipient}
+          aria-invalid={error}
+          placeholder={emails.length === 0 ? t.placeholderFirst : t.placeholderMore}
           className="h-7 min-w-44 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
           onChange={(event) => {
             setDraft(event.target.value)
-            setError("")
+            setError(false)
           }}
           onKeyDown={handleKeyDown}
           onBlur={() => {
@@ -107,7 +129,7 @@ export function EmailChipInput({ emails, onChange }: EmailChipInputProps) {
       </div>
 
       <p className={cn("text-xs text-muted-foreground", error && "text-destructive")}>
-        {error || "Press Enter or comma after each email address."}
+        {error ? t.invalid : t.hint}
       </p>
     </div>
   )

@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import type { CertificateRecord } from "@/components/certificate/types"
+import { useMessages } from "@/components/i18n/locale-provider"
 
 type DeleteCertificateDialogProps = {
   certificate: CertificateRecord | null
@@ -22,7 +23,29 @@ type DeleteCertificateDialogProps = {
   onConfirm: (id: string) => Promise<void>
 }
 
+const messages = {
+  en: {
+    deleteFailed: "Could not delete this certificate.",
+    title: "Delete certificate?",
+    description: (name: string) => `“${name}” will be permanently removed. This action cannot be undone.`,
+    fallbackDescription: "This certificate will be permanently removed.",
+    cancel: "Cancel",
+    deleting: "Deleting…",
+    confirm: "Delete certificate",
+  },
+  id: {
+    deleteFailed: "Tidak dapat menghapus sertifikat ini.",
+    title: "Hapus sertifikat?",
+    description: (name: string) => `“${name}” akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`,
+    fallbackDescription: "Sertifikat ini akan dihapus secara permanen.",
+    cancel: "Batal",
+    deleting: "Menghapus…",
+    confirm: "Hapus sertifikat",
+  },
+}
+
 export function DeleteCertificateDialog({ certificate, onOpenChange, onConfirm }: DeleteCertificateDialogProps) {
+  const t = useMessages(messages)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,7 +56,7 @@ export function DeleteCertificateDialog({ certificate, onOpenChange, onConfirm }
     try {
       await onConfirm(certificate.id)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not delete this certificate.")
+      setError(caught instanceof Error ? caught.message : t.deleteFailed)
     } finally {
       setDeleting(false)
     }
@@ -49,20 +72,20 @@ export function DeleteCertificateDialog({ certificate, onOpenChange, onConfirm }
           <AlertDialogMedia className="bg-destructive/10 text-destructive">
             <Trash2Icon />
           </AlertDialogMedia>
-          <AlertDialogTitle>Delete certificate?</AlertDialogTitle>
+          <AlertDialogTitle>{t.title}</AlertDialogTitle>
           <AlertDialogDescription>
-            {certificate ? `“${certificate.name}” will be permanently removed. This action cannot be undone.` : "This certificate will be permanently removed."}
+            {certificate ? t.description(certificate.name) : t.fallbackDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={deleting}
             onClick={() => { void confirmDelete() }}
           >
-            {deleting ? "Deleting…" : "Delete certificate"}
+            {deleting ? t.deleting : t.confirm}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

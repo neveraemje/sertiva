@@ -1,5 +1,7 @@
 import { FileTextIcon, ImageIcon, LoaderCircleIcon, UploadIcon } from "lucide-react"
 
+import { useMessages } from "@/components/i18n/locale-provider"
+
 type DesignFilePreviewProps = {
   file: File | null
   previewUrl: string | null
@@ -8,15 +10,36 @@ type DesignFilePreviewProps = {
   loading?: boolean
 }
 
+const messages = {
+  en: {
+    preparing: "Preparing preview…",
+    readingDimensions: "Reading the design dimensions",
+    choose: "Choose a design file",
+    formats: "PDF, PNG, or JPG",
+    preview: (name: string) => `${name} preview`,
+    replace: "Click to replace",
+  },
+  id: {
+    preparing: "Menyiapkan pratinjau…",
+    readingDimensions: "Membaca dimensi desain",
+    choose: "Pilih file desain",
+    formats: "PDF, PNG, atau JPG",
+    preview: (name: string) => `Pratinjau ${name}`,
+    replace: "Klik untuk mengganti",
+  },
+}
+
 export function DesignFilePreview({ file, previewUrl, width, height, loading = false }: DesignFilePreviewProps) {
+  const t = useMessages(messages)
+
   if (loading) {
     return (
       <>
         <span className="mb-4 flex size-10 items-center justify-center rounded-lg border bg-background">
           <LoaderCircleIcon className="size-5 animate-spin" />
         </span>
-        <span className="text-sm font-medium">Preparing preview…</span>
-        <span className="mt-1 text-xs text-muted-foreground">Reading the design dimensions</span>
+        <span className="text-sm font-medium">{t.preparing}</span>
+        <span className="mt-1 text-xs text-muted-foreground">{t.readingDimensions}</span>
       </>
     )
   }
@@ -27,8 +50,8 @@ export function DesignFilePreview({ file, previewUrl, width, height, loading = f
         <span className="mb-4 flex size-10 items-center justify-center rounded-lg border bg-background">
           <UploadIcon className="size-5" />
         </span>
-        <span className="text-sm font-medium">Choose a design file</span>
-        <span className="mt-1 text-xs text-muted-foreground">PDF, PNG, or JPG</span>
+        <span className="text-sm font-medium">{t.choose}</span>
+        <span className="mt-1 text-xs text-muted-foreground">{t.formats}</span>
       </>
     )
   }
@@ -45,7 +68,7 @@ export function DesignFilePreview({ file, previewUrl, width, height, loading = f
           className="block size-full bg-contain bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${previewUrl})` }}
           role="img"
-          aria-label={`${file.name} preview`}
+          aria-label={t.preview(file.name)}
         />
       </span>
 
@@ -55,7 +78,7 @@ export function DesignFilePreview({ file, previewUrl, width, height, loading = f
         </span>
         <span className="min-w-0 text-left">
           <span className="block truncate text-sm font-medium">{file.name}</span>
-          <span className="block text-xs text-muted-foreground">Click to replace</span>
+          <span className="block text-xs text-muted-foreground">{t.replace}</span>
         </span>
       </span>
     </>
