@@ -3,8 +3,10 @@
 import { type PointerEvent, useEffect, useRef, useState } from "react"
 import { GripIcon, MinusIcon, PlusIcon } from "lucide-react"
 
-import { defaultFieldMargin, defaultFieldSize, type CertificateEditorState, type FieldPosition, type FieldSize, type TemplateAsset } from "@/components/certificate/types"
+import { defaultFieldMargin, defaultFieldSize, defaultLineHeight, type CertificateEditorState, type FieldPosition, type FieldSize, type TemplateAsset } from "@/components/certificate/types"
+import { pageAt, pageBounds, type PageBounds } from "@/components/certificate/pages"
 import { useMessages } from "@/components/i18n/locale-provider"
+import { canvasFontFamily, fitNameText } from "@/lib/certificates/render"
 import { cn } from "@/lib/utils"
 
 type CertificatePreviewProps = {
@@ -26,6 +28,7 @@ type DragSession = {
   height: number
   snappedX: boolean
   snappedY: boolean
+  pages: PageBounds[]
 }
 
 type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw"
@@ -96,6 +99,13 @@ function nextZoom(zoom: number, direction: 1 | -1) {
   return steps.find((step) => direction === 1 ? step > zoom + 0.001 : step < zoom - 0.001) ?? zoom
 }
 
+let measureContext: CanvasRenderingContext2D | null = null
+
+function getMeasureContext() {
+  measureContext ??= document.createElement("canvas").getContext("2d")
+  return measureContext
+}
+
 const SNAP_IN_PX = 12
 const SNAP_OUT_PX = 20
 
@@ -103,17 +113,23 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function snapToCenter(value: number, size: number, snapped: boolean) {
-  const distance = Math.abs(value - 50) * size / 100
+function snapToCenter(value: number, size: number, snapped: boolean, center = 50) {
+  const distance = Math.abs(value - center) * size / 100
   const shouldSnap = distance <= (snapped ? SNAP_OUT_PX : SNAP_IN_PX)
-  return { value: shouldSnap ? 50 : value, snapped: shouldSnap }
+  return { value: shouldSnap ? center : value, snapped: shouldSnap }
+}
+
+function pageCenter(page: PageBounds) {
+  return Math.round((page.top + page.bottom) / 2 * 100) / 100
 }
 
 function dragPositionFor(event: PointerEvent<HTMLButtonElement>, session: DragSession): FieldPosition {
   const rawX = clamp(session.startPosition.x + ((event.clientX - session.startX) / session.width) * 100, 10, 90)
-  const rawY = clamp(session.startPosition.y + ((event.clientY - session.startY) / session.height) * 100, 14, 86)
+  // A multi-page design lets the name move onto any page, so it can go nearly to the top and bottom.
+  const [minY, maxY] = session.pages.length > 1 ? [1, 99] : [14, 86]
+  const rawY = clamp(session.startPosition.y + ((event.clientY - session.startY) / session.height) * 100, minY, maxY)
   const x = snapToCenter(rawX, session.width, session.snappedX)
-  const y = snapToCenter(rawY, session.height, session.snappedY)
+  const y = snapToCenter(rawY, session.height, session.snappedY, pageCenter(pageAt(session.pages, rawY)))
   session.snappedX = x.snapped
   session.snappedY = y.snapped
   return {
@@ -137,6 +153,7 @@ const messages = {
     fit: "Fit",
     fitToScreen: "Fit to screen",
     zoomHint: "Ctrl or ⌘ + scroll to zoom",
+    page: (page: number, total: number) => `Page ${page} of ${total}`,
   },
   id: {
     dragField: "Seret kolom nama penerima",
@@ -152,6 +169,7 @@ const messages = {
     fit: "Pas",
     fitToScreen: "Paskan ke layar",
     zoomHint: "Ctrl atau ⌘ + gulir untuk zoom",
+    page: (page: number, total: number) => `Halaman ${page} dari ${total}`,
   },
 }
 
@@ -173,15 +191,30 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
   const size = resizeBox?.size ?? editor.size ?? defaultFieldSize
   const fixedHeight = size.height !== undefined
   const margin = editor.margin ?? defaultFieldMargin
+  const lineHeight = editor.lineHeight ?? defaultLineHeight
   const aspectRatio = template.width && template.height ? template.width / template.height : 1.414
+  const pages = pageBounds(editor.pages)
+  // Fit one page to the screen; further pages continue below and scroll.
+  const pageAspectRatio = aspectRatio / ((pages[0].bottom - pages[0].top) / 100)
   const designPreviewUrl = template.previewUrl ?? (template.kind === "image" ? template.url : null)
-  // cqw/cqh are relative to the name box; with a fixed height the text also shrinks to fit it.
-  const widthFit = `${145 / Math.max(editor.recipientName.length, 1)}cqw`
-  const fittedFontSize = editor.autoFit
-    ? fixedHeight
-      ? `min(${widthFit}, 80cqh, ${editor.fontSize}px)`
-      : `clamp(18px, ${widthFit}, ${editor.fontSize}px)`
+  // Re-renders once web fonts finish loading, so the text is measured with the real font.
+  const [, setFontsLoaded] = useState(0)
+  // Same sizing as the download: measured on a 1000px-wide copy of the design, then scaled to the
+  // width the certificate is shown at (CSS zoom scales it further). fitWidth is only known in the
+  // browser, so the server render and first paint use the plain size.
+  const measure = fitWidth ? getMeasureContext() : null
+  const fittedFontSize = measure && fitWidth
+    ? `${fitNameText(measure, { ...editor, size }, editor.recipientName, 1000, 1000 / aspectRatio).fontSize * fitWidth / 1000}px`
     : `${editor.fontSize}px`
+
+  useEffect(() => {
+    const family = canvasFontFamily(editor.fontFamily)
+    let active = true
+    void document.fonts.load(`${editor.fontWeight || 400} ${editor.fontSize}px ${family}`).then(() => {
+      if (active) setFontsLoaded((count) => count + 1)
+    })
+    return () => { active = false }
+  }, [editor.fontFamily, editor.fontWeight, editor.fontSize])
 
   useEffect(() => () => {
     if (animationFrame.current !== null) cancelAnimationFrame(animationFrame.current)
@@ -195,7 +228,7 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
       const style = getComputedStyle(area)
       const available = area.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight)
       const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
-      const byHeight = (window.innerHeight - FIT_CHROME_REM * rem) * aspectRatio
+      const byHeight = (window.innerHeight - FIT_CHROME_REM * rem) * pageAspectRatio
       setFitWidth(Math.max(200, Math.min(available, byHeight, MAX_FIT_WIDTH)))
     }
     measure()
@@ -206,7 +239,7 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
       observer.disconnect()
       window.removeEventListener("resize", measure)
     }
-  }, [aspectRatio])
+  }, [pageAspectRatio])
 
   // Ctrl/⌘ + wheel (and trackpad pinch, which browsers send as ctrl + wheel) zooms the canvas.
   useEffect(() => {
@@ -233,7 +266,8 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
       width: bounds.width,
       height: bounds.height,
       snappedX: position.x === 50,
-      snappedY: position.y === 50,
+      snappedY: position.y === pageCenter(pageAt(pages, position.y)),
+      pages,
     }
     setDragPosition(position)
     setDragging(true)
@@ -334,12 +368,20 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
           className="relative overflow-hidden bg-white [container-type:inline-size] shadow-2xl shadow-black/15 ring-1 ring-black/10 select-none"
           style={{
             aspectRatio,
-            width: fitWidth ?? `min(100%, calc((100svh - ${FIT_CHROME_REM}rem) * ${aspectRatio}))`,
+            width: fitWidth ?? `min(100%, calc((100svh - ${FIT_CHROME_REM}rem) * ${pageAspectRatio}))`,
             zoom,
             ...(designPreviewUrl ? { backgroundImage: `url(${designPreviewUrl})`, backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "100% 100%" } : {}),
           }}
         >
           {template.kind === "sample" && <SampleCertificate />}
+
+          {pages.slice(1).map((page, index) => (
+            <div key={page.top} aria-hidden="true" className="pointer-events-none absolute inset-x-0 z-[4]" style={{ top: `${page.top}%` }}>
+              <div className="-translate-y-1/2 border-y border-black/10 bg-[#f6f6f6] py-1" />
+              {!previewMode && <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 font-sans text-[10px] text-white">{t.page(index + 2, pages.length)}</span>}
+            </div>
+          ))}
+          {!previewMode && pages.length > 1 && <span aria-hidden="true" className="pointer-events-none absolute top-2 left-2 z-[4] rounded bg-black/60 px-1.5 py-0.5 font-sans text-[10px] text-white">{t.page(1, pages.length)}</span>}
 
           {!previewMode && dragging && (
             <>
@@ -350,7 +392,7 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
               />
               <span
                 aria-hidden="true"
-                className={cn("pointer-events-none absolute inset-x-0 z-[5] border-t shadow-[0_0_0_1px_rgba(255,255,255,0.45)]", position.y === 50 ? "border-t-2 border-sky-500" : "border-dashed border-sky-500/90")}
+                className={cn("pointer-events-none absolute inset-x-0 z-[5] border-t shadow-[0_0_0_1px_rgba(255,255,255,0.45)]", position.y === pageCenter(pageAt(pages, position.y)) ? "border-t-2 border-sky-500" : "border-dashed border-sky-500/90")}
                 style={{ top: `${position.y}%` }}
               />
             </>
@@ -380,6 +422,7 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
                   color: editor.textColor,
                   fontFamily: editor.fontFamily,
                   fontSize: fittedFontSize,
+                  lineHeight,
                   fontWeight: editor.fontWeight ?? 400,
                   opacity: (editor.textOpacity ?? 100) / 100,
                   textAlign: editor.textAlign,
@@ -411,6 +454,9 @@ export function CertificatePreview({ template, editor, onPositionChange, onBoxCh
                     color: editor.textColor,
                     fontFamily: editor.fontFamily,
                     fontSize: fittedFontSize,
+                    // Inputs ignore line-height for their own height, so it is set in em as well.
+                    lineHeight,
+                    height: `${lineHeight}em`,
                     fontWeight: editor.fontWeight ?? 400,
                     opacity: (editor.textOpacity ?? 100) / 100,
                     textAlign: editor.textAlign,

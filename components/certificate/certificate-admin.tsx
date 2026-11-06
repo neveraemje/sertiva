@@ -6,6 +6,7 @@ import { AppSidebar, type DashboardSection } from "@/components/app-sidebar"
 import { CertificateEditor } from "@/components/certificate/certificate-editor"
 import { CertificateList } from "@/components/certificate/certificate-list"
 import { LocaleProvider, useMessages } from "@/components/i18n/locale-provider"
+import { pageBounds, yOnPage } from "@/components/certificate/pages"
 import { NewCertificateSheet } from "@/components/certificate/new-certificate-sheet"
 import { PublicationActivityDialog } from "@/components/certificate/publication-activity-dialog"
 import type { PreparedDesignFile } from "@/components/certificate/prepare-design-file"
@@ -187,7 +188,11 @@ export function CertificateAdmin({ user: initialUser, initialCertificateId, init
   }, [user.id])
 
   async function createCertificate(name: string, design: PreparedDesignFile) {
-    const certificate = await createStoredCertificate(user.id, name, design, { ...defaultEditor })
+    // A multi-page PDF starts with the name on the first page, at the same spot as a single page.
+    const editor = design.pages
+      ? { ...defaultEditor, pages: design.pages, position: { ...defaultEditor.position, y: yOnPage(pageBounds(design.pages)[0], defaultEditor.position.y) } }
+      : { ...defaultEditor }
+    const certificate = await createStoredCertificate(user.id, name, design, editor)
     const next = [certificate, ...certificatesRef.current]
     certificatesRef.current = next
     setCertificates(next)

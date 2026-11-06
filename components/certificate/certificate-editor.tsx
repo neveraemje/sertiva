@@ -5,15 +5,17 @@ import { ArrowLeftIcon, Trash2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { DownloadPanel } from "@/components/certificate/download-panel"
 import { CertificatePreview } from "@/components/certificate/certificate-preview"
 import { DeleteCertificateDialog } from "@/components/certificate/delete-certificate-dialog"
-import { EditorActions } from "@/components/certificate/editor-actions"
+import { EditorActions, PublishButton } from "@/components/certificate/editor-actions"
 import { FieldSettings } from "@/components/certificate/field-settings"
 import { PublishCertificateDialog } from "@/components/certificate/publish-certificate-dialog"
 import { PublishedDetail } from "@/components/certificate/published-detail"
 import type { CertificateEditorState, CertificateRecord, CertificateView, FieldPosition } from "@/components/certificate/types"
 import { Badge } from "@/components/ui/badge"
 import { useMessages } from "@/components/i18n/locale-provider"
+import { cn } from "@/lib/utils"
 
 type CertificateEditorProps = {
   certificate: CertificateRecord
@@ -37,6 +39,8 @@ const messages = {
     properties: "Properties",
     publishedDetail: "Published detail",
     deleteCertificate: "Delete certificate",
+    download: "Download",
+    panelTabs: "Side panel",
   },
   id: {
     back: "Kembali ke sertifikat",
@@ -45,6 +49,8 @@ const messages = {
     properties: "Properti",
     publishedDetail: "Detail terbitan",
     deleteCertificate: "Hapus sertifikat",
+    download: "Unduh",
+    panelTabs: "Panel samping",
   },
 }
 
@@ -54,6 +60,7 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
   const editing = view !== "details"
   const [publishOpen, setPublishOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [panel, setPanel] = useState<"settings" | "download">("settings")
   const sidebarRef = useRef<HTMLElement>(null)
 
   function showPublishedDetails() {
@@ -124,20 +131,40 @@ export function CertificateEditor({ certificate, view, onViewChange, userId, onB
 
       {!previewMode && (
         <aside ref={sidebarRef} className="w-full shrink-0 scroll-mt-4 border-t bg-white xl:flex xl:h-svh xl:min-h-0 xl:w-[320px] xl:flex-col xl:overflow-hidden xl:border-t-0 xl:border-l">
-          <div className="flex h-14 shrink-0 items-center border-b px-4 text-sm font-medium">{editing ? t.properties : t.publishedDetail}</div>
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+          <div role="tablist" aria-label={t.panelTabs} className="flex h-full items-end gap-5 self-stretch text-sm font-medium">
+            {([["settings", editing ? t.properties : t.publishedDetail], ["download", t.download]] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={panel === value}
+                className={cn("-mb-px border-b-2 pb-3.5 transition-colors", panel === value ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
+                onClick={() => setPanel(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+            <div className="ml-auto">
+              <PublishButton size="default" published={Boolean(certificate.publication)} editing={editing} onPublish={() => setPublishOpen(true)} onEdit={showProperties} />
+            </div>
+          </div>
           <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-            {editing ? (
+            {panel === "download" ? <DownloadPanel certificate={certificate} onNameChange={(recipientName) => onChange({ recipientName })} /> : editing ? (
               <FieldSettings
                 className="rounded-none border-0 bg-white shadow-none ring-0 backdrop-blur-none"
                 editor={certificate.editor}
                 onChange={onChange}
               />
             ) : <PublishedDetail certificate={certificate} active onSettingsChanged={onPublished} onViewActivity={onViewActivity} />}
-            <div className="border-t p-4">
-              <Button type="button" variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)}>
-                <Trash2Icon /> {t.deleteCertificate}
-              </Button>
-            </div>
+            {panel === "settings" && (
+              <div className="border-t p-4">
+                <Button type="button" variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)}>
+                  <Trash2Icon /> {t.deleteCertificate}
+                </Button>
+              </div>
+            )}
           </div>
         </aside>
       )}

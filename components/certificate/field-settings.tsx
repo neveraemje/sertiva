@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { RotateCcwIcon } from "lucide-react"
 
 import { CanvasAlignmentControls, TextAlignmentControl } from "@/components/certificate/alignment-controls"
+import { pageAt, pageBounds, yOnPage } from "@/components/certificate/pages"
 import { SettingRow } from "@/components/certificate/setting-row"
 import { TextColorPicker } from "@/components/certificate/text-color-picker"
-import { defaultFieldMargin, defaultFieldSize, type CertificateEditorState } from "@/components/certificate/types"
+import { defaultFieldMargin, defaultFieldSize, defaultLineHeight, type CertificateEditorState } from "@/components/certificate/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -55,6 +57,7 @@ const messages = {
     weights: { 400: "Regular", 500: "Medium", 600: "Semibold", 700: "Bold" } as Record<number, string>,
     size: "Size",
     fontSize: "Font size",
+    lineHeight: "Line height",
     color: "Color",
     align: "Align",
     position: "Position",
@@ -78,6 +81,7 @@ const messages = {
     weights: { 400: "Reguler", 500: "Sedang", 600: "Semitebal", 700: "Tebal" } as Record<number, string>,
     size: "Ukuran",
     fontSize: "Ukuran font",
+    lineHeight: "Tinggi baris",
     color: "Warna",
     align: "Perataan",
     position: "Posisi",
@@ -108,9 +112,31 @@ function clampMargin(value: string) {
   return Number.isFinite(number) && value !== "" ? Math.min(200, Math.max(0, number)) : undefined
 }
 
+const MIN_FONT_SIZE = 1
+const MAX_FONT_SIZE = 500
+
 export function FieldSettings({ editor, onChange, className }: FieldSettingsProps) {
   const t = useMessages(messages)
   const size = editor.size ?? defaultFieldSize
+  // Holds what is being typed, so the box can be cleared or hold a partial number while editing.
+  const [fontSizeDraft, setFontSizeDraft] = useState<string | null>(null)
+  const [lineHeightDraft, setLineHeightDraft] = useState<string | null>(null)
+
+  function changeLineHeight(value: string) {
+    setLineHeightDraft(value)
+    const number = Number(value)
+    if (value.trim() !== "" && Number.isFinite(number) && number > 0) {
+      onChange({ lineHeight: Math.min(5, Math.max(0.5, number)) })
+    }
+  }
+
+  function changeFontSize(value: string) {
+    setFontSizeDraft(value)
+    const number = Number(value)
+    if (value.trim() !== "" && Number.isFinite(number) && number >= MIN_FONT_SIZE) {
+      onChange({ fontSize: Math.min(MAX_FONT_SIZE, number) })
+    }
+  }
   const margin = editor.margin ?? defaultFieldMargin
   const selectedFont = [...standardFonts, ...thmanyahFonts, ...googleFonts].find((font) => font.value === editor.fontFamily)
 
@@ -154,11 +180,18 @@ export function FieldSettings({ editor, onChange, className }: FieldSettingsProp
           <SettingRow label={t.size} htmlFor="font-size" className="items-start">
             <div className="space-y-2">
               <div className="relative">
-                <Input id="font-size" type="number" min={18} max={72} value={editor.fontSize} onChange={(event) => onChange({ fontSize: Number(event.target.value) })} className="h-9 border-border/70 bg-muted/60 pr-8 shadow-none" />
+                <Input id="font-size" type="number" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} step="any" value={fontSizeDraft ?? editor.fontSize} onChange={(event) => changeFontSize(event.target.value)} onBlur={() => setFontSizeDraft(null)} className="h-9 border-border/70 bg-muted/60 pr-8 shadow-none" />
                 <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">px</span>
               </div>
-              <input className="w-full accent-black" type="range" min={18} max={72} value={editor.fontSize} onChange={(event) => onChange({ fontSize: Number(event.target.value) })} aria-label={t.fontSize} />
+              <input className="w-full accent-black" type="range" min={8} max={150} value={editor.fontSize} onChange={(event) => {
+                setFontSizeDraft(null)
+                onChange({ fontSize: Number(event.target.value) })
+              }} aria-label={t.fontSize} />
             </div>
+          </SettingRow>
+
+          <SettingRow label={t.lineHeight} htmlFor="line-height">
+            <Input id="line-height" type="number" min={0.5} max={5} step={0.1} value={lineHeightDraft ?? editor.lineHeight ?? defaultLineHeight} onChange={(event) => changeLineHeight(event.target.value)} onBlur={() => setLineHeightDraft(null)} className="h-9 border-border/70 bg-muted/60 shadow-none" />
           </SettingRow>
 
           <SettingRow label={t.color}>
@@ -179,11 +212,11 @@ export function FieldSettings({ editor, onChange, className }: FieldSettingsProp
         <section className="space-y-4 px-4 py-5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">{t.position}</h3>
-            <Button size="xs" variant="ghost" onClick={() => onChange({ position: { x: 50, y: 57 }, size: undefined, margin: undefined })}><RotateCcwIcon /> {t.reset}</Button>
+            <Button size="xs" variant="ghost" onClick={() => onChange({ position: { x: 50, y: yOnPage(pageAt(pageBounds(editor.pages), editor.position.y), 57) }, size: undefined, margin: undefined })}><RotateCcwIcon /> {t.reset}</Button>
           </div>
 
           <SettingRow label={t.align}>
-            <CanvasAlignmentControls position={editor.position} onChange={(position) => onChange({ position })} />
+            <CanvasAlignmentControls position={editor.position} pages={editor.pages} onChange={(position) => onChange({ position })} />
           </SettingRow>
 
           <SettingRow label={t.xPosition} htmlFor="position-x">
@@ -222,6 +255,7 @@ export function FieldSettings({ editor, onChange, className }: FieldSettingsProp
             </div>
           </SettingRow>
         </section>
+
       </CardContent>
     </Card>
   )

@@ -46,6 +46,23 @@ const messages = {
   },
 }
 
+// The main action: publish a draft, publish changes, or start editing a published certificate.
+// It sits in the side panel's tab bar, and in the top bar while the side panel is hidden for preview.
+export function PublishButton({ published, editing, onPublish, onEdit, size = "lg" }: {
+  published: boolean
+  editing: boolean
+  onPublish: () => void
+  onEdit: () => void
+  size?: "default" | "lg"
+}) {
+  const t = useMessages(messages)
+  return (
+    <Button type="button" size={size} onClick={published && !editing ? onEdit : onPublish}>
+      {published ? editing ? t.publishChanges : t.edit : t.publish}
+    </Button>
+  )
+}
+
 export function EditorActions({ previewMode, onPreviewToggle, onSave, saveStatus, onPublish, published, editing, onEdit, onActivity }: EditorActionsProps) {
   const t = useMessages(messages)
 
@@ -70,9 +87,7 @@ export function EditorActions({ previewMode, onPreviewToggle, onSave, saveStatus
       {published && editing && <Button type="button" variant="outline" size="lg" onClick={onActivity}>
         <ListIcon /> {t.publishedDetail}
       </Button>}
-      <Button type="button" size="lg" onClick={published && !editing ? onEdit : onPublish}>
-        {published ? editing ? t.publishChanges : t.edit : t.publish}
-      </Button>
+      {previewMode && <PublishButton published={published} editing={editing} onPublish={onPublish} onEdit={onEdit} />}
     </div>
   )
 }

@@ -12,6 +12,7 @@ import {
   AlignVerticalJustifyStartIcon,
 } from "lucide-react"
 
+import { pageAt, pageBounds, yOnPage } from "@/components/certificate/pages"
 import { useMessages } from "@/components/i18n/locale-provider"
 import { Button } from "@/components/ui/button"
 import type { FieldPosition, TextAlignment } from "@/components/certificate/types"
@@ -71,11 +72,15 @@ export function TextAlignmentControl({ value, onChange }: TextAlignmentControlPr
 
 type CanvasAlignmentControlsProps = {
   position: FieldPosition
+  pages?: number[]
   onChange: (position: FieldPosition) => void
 }
 
-export function CanvasAlignmentControls({ position, onChange }: CanvasAlignmentControlsProps) {
+export function CanvasAlignmentControls({ position, pages, onChange }: CanvasAlignmentControlsProps) {
   const t = useMessages(messages)
+  // Vertical presets apply within the page the name is on.
+  const page = pageAt(pageBounds(pages), position.y)
+  const [top, middle, bottom] = [15, 50, 85].map((percent) => yOnPage(page, percent))
 
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -85,9 +90,9 @@ export function CanvasAlignmentControls({ position, onChange }: CanvasAlignmentC
         <SegmentButton active={position.x === 88} label={t.fieldRight} onClick={() => onChange({ ...position, x: 88 })}><AlignHorizontalJustifyEndIcon /></SegmentButton>
       </div>
       <div className="grid grid-cols-3 rounded-lg bg-muted p-1" role="group" aria-label={t.vertical}>
-        <SegmentButton active={position.y === 15} label={t.fieldTop} onClick={() => onChange({ ...position, y: 15 })}><AlignVerticalJustifyStartIcon /></SegmentButton>
-        <SegmentButton active={position.y === 50} label={t.fieldCenterY} onClick={() => onChange({ ...position, y: 50 })}><AlignVerticalJustifyCenterIcon /></SegmentButton>
-        <SegmentButton active={position.y === 85} label={t.fieldBottom} onClick={() => onChange({ ...position, y: 85 })}><AlignVerticalJustifyEndIcon /></SegmentButton>
+        <SegmentButton active={position.y === top} label={t.fieldTop} onClick={() => onChange({ ...position, y: top })}><AlignVerticalJustifyStartIcon /></SegmentButton>
+        <SegmentButton active={position.y === middle} label={t.fieldCenterY} onClick={() => onChange({ ...position, y: middle })}><AlignVerticalJustifyCenterIcon /></SegmentButton>
+        <SegmentButton active={position.y === bottom} label={t.fieldBottom} onClick={() => onChange({ ...position, y: bottom })}><AlignVerticalJustifyEndIcon /></SegmentButton>
       </div>
     </div>
   )

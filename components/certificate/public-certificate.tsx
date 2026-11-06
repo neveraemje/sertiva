@@ -4,11 +4,14 @@ import { type FormEvent, useEffect, useRef, useState } from "react"
 import { DownloadIcon } from "lucide-react"
 
 import { SertivaLogo } from "@/components/sertiva-logo"
+import { isMultiPage } from "@/components/certificate/pages"
 import type { CertificateEditorState } from "@/components/certificate/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createPdfDownload } from "@/lib/certificates/pdf-download"
+import { renderCertificate } from "@/lib/certificates/render"
+import { cn } from "@/lib/utils"
 
 type PublicCertificateProps = {
   slug: string
@@ -27,72 +30,13 @@ type ClaimedCertificate = {
 
 type DownloadFormat = "pdf" | "png"
 
-function canvasFontFamily(value: string) {
-  return value.startsWith("Timeless Sans Grotesk")
-    ? '"Timeless Sans Grotesk", sans-serif'
-    : value
-}
-
-async function renderCertificate(imageUrl: string, editor: CertificateEditorState, name: string) {
-  const response = await fetch(imageUrl)
-  if (!response.ok) throw new Error("The certificate design could not be loaded.")
-
-  const image = await createImageBitmap(await response.blob())
-  try {
-    const canvas = document.createElement("canvas")
-    canvas.width = image.width
-    canvas.height = image.height
-    const context = canvas.getContext("2d")
-    if (!context) throw new Error("Your browser could not create a certificate preview.")
-
-    context.drawImage(image, 0, 0)
-
-    const family = canvasFontFamily(editor.fontFamily)
-    await document.fonts.load(`${editor.fontWeight || 400} ${editor.fontSize}px ${family}`)
-
-    let fontSize = (editor.fontSize || 34) * (canvas.width / 1000)
-    // The text area is the name box minus its margin, which is in px on a 1000px-wide certificate.
-    const size = editor.size ?? { width: 60 }
-    const margin = editor.margin ?? { x: 20, y: 5 }
-    const scale = canvas.width / 1000
-    const maxWidth = Math.max(1, canvas.width * size.width / 100 - 2 * margin.x * scale)
-    const maxHeight = size.height ? Math.max(1, canvas.height * size.height / 100 - 2 * margin.y * scale) * 0.8 : Infinity
-    context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
-    if (editor.autoFit) {
-      while ((context.measureText(name).width > maxWidth || fontSize > maxHeight) && fontSize > canvas.width * 0.018) {
-        fontSize -= Math.max(1, canvas.width / 1000)
-        context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
-      }
-    }
-
-    const position = editor.position ?? { x: 50, y: 57 }
-    const centerX = canvas.width * position.x / 100
-    const centerY = canvas.height * position.y / 100
-    const align = editor.textAlign || "center"
-    context.fillStyle = editor.textColor || "#171717"
-    context.globalAlpha = Math.min(1, Math.max(0, (editor.textOpacity ?? 100) / 100))
-    context.textAlign = align
-    context.textBaseline = "middle"
-    context.font = `${editor.fontWeight || 400} ${fontSize}px ${family}`
-    const textX = align === "left" ? centerX - maxWidth / 2
-      : align === "right" ? centerX + maxWidth / 2
-      : centerX
-    context.fillText(name, textX, centerY, maxWidth)
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Could not create the certificate image.")), "image/png")
-    })
-    return URL.createObjectURL(blob)
-  } finally {
-    image.close()
-  }
-}
-
 export function PublicCertificate({ slug, title, accessMode, inputMode, available, legacyAsset }: PublicCertificateProps) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [previewName, setPreviewName] = useState("")
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Page layout of the previewed design, so the PDF download can split it back into pages.
+  const [previewPages, setPreviewPages] = useState<number[] | undefined>()
   const [downloadToken, setDownloadToken] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<DownloadFormat | null>(null)
   const downloadInProgress = useRef(false)
@@ -148,6 +92,7 @@ export function PublicCertificate({ slug, title, accessMode, inputMode, availabl
       const url = await renderCertificate(certificate.imageUrl, certificate.editor, trimmedName)
       setPreviewName(trimmedName)
       setPreviewUrl(url)
+      setPreviewPages(certificate.editor.pages)
       setDownloadToken(certificate.downloadToken ?? null)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not preview the certificate.")
@@ -169,7 +114,7 @@ export function PublicCertificate({ slug, title, accessMode, inputMode, availabl
     let pdfUrl: string | null = null
     try {
       if (format === "pdf") {
-        const pdf = await createPdfDownload(previewUrl, `${title} - ${previewName}`)
+        const pdf = await createPdfDownload(previewUrl, `${title} - ${previewName}`, previewPages)
         pdfUrl = URL.createObjectURL(pdf)
       }
       if (downloadToken) {
@@ -283,7 +228,7 @@ export function PublicCertificate({ slug, title, accessMode, inputMode, availabl
               {previewUrl ? (
                 // The generated Blob URL is created locally from the published design.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewUrl} alt={`Certificate for ${previewName}`} className="max-h-[70vh] w-full object-contain shadow-lg" />
+                <img src={previewUrl} alt={`Certificate for ${previewName}`} className={cn("w-full object-contain shadow-lg", !isMultiPage(previewPages) && "max-h-[70vh]")} />
               ) : (
                 <div className="text-center text-muted-foreground">
                   <p className="text-sm">Your preview will appear here</p>

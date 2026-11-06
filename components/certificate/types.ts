@@ -28,6 +28,9 @@ export type FieldMargin = {
 
 export const defaultFieldMargin: FieldMargin = { x: 20, y: 5 }
 
+// Line height as a multiple of the font size. Script fonts need room above and below the letters.
+export const defaultLineHeight = 1.2
+
 export type TextAlignment = "left" | "center" | "right"
 
 export type CertificateView = "edit" | "preview" | "details"
@@ -43,6 +46,9 @@ export type CertificateEditorState = {
   position: FieldPosition
   size?: FieldSize
   margin?: FieldMargin
+  lineHeight?: number
+  // Relative page heights for a multi-page PDF, stacked top to bottom in one image (see pages.ts).
+  pages?: number[]
   autoFit: boolean
 }
 

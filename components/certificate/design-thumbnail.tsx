@@ -28,6 +28,7 @@ export function DesignThumbnail({ template, variant = "compact" }: DesignThumbna
   const t = useMessages(designFormatMessages)
   const format = getDesignFormat(template, t.image)
   const isCard = variant === "card"
+  const isTall = Boolean(template.width && template.height && template.height > template.width * 1.6)
 
   return (
     <span className={cn(
@@ -36,7 +37,8 @@ export function DesignThumbnail({ template, variant = "compact" }: DesignThumbna
     )}>
       {(template.previewUrl || (template.kind === "image" && template.url)) && (
         <span
-          className={cn("absolute inset-0 bg-center bg-no-repeat", isCard ? "bg-cover" : "bg-contain")}
+          // Tall designs (multi-page PDFs) show their first page rather than the middle.
+          className={cn("absolute inset-0 bg-no-repeat", isCard ? "bg-cover" : "bg-contain", isTall ? "bg-top" : "bg-center")}
           style={{ backgroundImage: `url(${template.previewUrl ?? template.url})` }}
           aria-hidden="true"
         />

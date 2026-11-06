@@ -3,7 +3,7 @@
 import { useRef, useState } from "react"
 
 import { DesignFilePreview } from "@/components/certificate/design-file-preview"
-import { prepareDesignFile, type PreparedDesignFile } from "@/components/certificate/prepare-design-file"
+import { MAX_PDF_PAGES, prepareDesignFile, TooManyPagesError, type PreparedDesignFile } from "@/components/certificate/prepare-design-file"
 import { useMessages } from "@/components/i18n/locale-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,7 @@ type NewCertificateSheetProps = {
 const messages = {
   en: {
     fileError: "This file could not be previewed. Try another PDF, PNG, or JPG.",
+    tooManyPages: (count: number) => `This PDF has ${count} pages. Upload a PDF with up to ${MAX_PDF_PAGES} pages.`,
     saveFailed: "Could not save the certificate.",
     title: "New certificate",
     description: "Name the certificate and upload its finished design.",
@@ -38,6 +39,7 @@ const messages = {
   },
   id: {
     fileError: "Pratinjau file ini tidak dapat ditampilkan. Coba file PDF, PNG, atau JPG lain.",
+    tooManyPages: (count: number) => `PDF ini memiliki ${count} halaman. Unggah PDF dengan maksimal ${MAX_PDF_PAGES} halaman.`,
     saveFailed: "Tidak dapat menyimpan sertifikat.",
     title: "Sertifikat baru",
     description: "Beri nama sertifikat dan unggah desain finalnya.",
@@ -69,8 +71,8 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
     setPreparing(true)
     try {
       setDesign(await prepareDesignFile(nextFile))
-    } catch {
-      setFileError(t.fileError)
+    } catch (caught) {
+      setFileError(caught instanceof TooManyPagesError ? t.tooManyPages(caught.pageCount) : t.fileError)
     } finally {
       setPreparing(false)
     }
@@ -134,6 +136,7 @@ export function NewCertificateSheet({ open, onOpenChange, onCreate }: NewCertifi
               <DesignFilePreview
                 file={design?.file ?? null}
                 previewUrl={design?.previewUrl ?? null}
+                pageCount={design?.pages?.length}
                 width={design?.width}
                 height={design?.height}
                 loading={preparing}

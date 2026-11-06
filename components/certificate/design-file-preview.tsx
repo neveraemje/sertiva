@@ -7,6 +7,7 @@ type DesignFilePreviewProps = {
   previewUrl: string | null
   width?: number
   height?: number
+  pageCount?: number
   loading?: boolean
 }
 
@@ -18,6 +19,7 @@ const messages = {
     formats: "PDF, PNG, or JPG",
     preview: (name: string) => `${name} preview`,
     replace: "Click to replace",
+    pages: (count: number) => `${count} pages`,
   },
   id: {
     preparing: "Menyiapkan pratinjau…",
@@ -26,10 +28,11 @@ const messages = {
     formats: "PDF, PNG, atau JPG",
     preview: (name: string) => `Pratinjau ${name}`,
     replace: "Klik untuk mengganti",
+    pages: (count: number) => `${count} halaman`,
   },
 }
 
-export function DesignFilePreview({ file, previewUrl, width, height, loading = false }: DesignFilePreviewProps) {
+export function DesignFilePreview({ file, previewUrl, width, height, pageCount = 1, loading = false }: DesignFilePreviewProps) {
   const t = useMessages(messages)
 
   if (loading) {
@@ -61,11 +64,12 @@ export function DesignFilePreview({ file, previewUrl, width, height, loading = f
   return (
     <>
       <span
+        // A multi-page PDF shows its first page here; the rest continue below it in the editor.
         className="mb-4 block w-full overflow-hidden rounded-lg border bg-white shadow-sm"
-        style={{ aspectRatio: width && height ? `${width} / ${height}` : "4 / 3" }}
+        style={{ aspectRatio: pageCount > 1 ? "4 / 3" : width && height ? `${width} / ${height}` : "4 / 3" }}
       >
         <span
-          className="block size-full bg-contain bg-center bg-no-repeat"
+          className={pageCount > 1 ? "block size-full bg-cover bg-top bg-no-repeat" : "block size-full bg-contain bg-center bg-no-repeat"}
           style={{ backgroundImage: `url(${previewUrl})` }}
           role="img"
           aria-label={t.preview(file.name)}
@@ -78,7 +82,7 @@ export function DesignFilePreview({ file, previewUrl, width, height, loading = f
         </span>
         <span className="min-w-0 text-left">
           <span className="block truncate text-sm font-medium">{file.name}</span>
-          <span className="block text-xs text-muted-foreground">{t.replace}</span>
+          <span className="block text-xs text-muted-foreground">{pageCount > 1 ? `${t.pages(pageCount)} · ${t.replace}` : t.replace}</span>
         </span>
       </span>
     </>
